@@ -370,11 +370,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
         };
 
         TokenRequest tokenRequest = builder.build();
-        try {
-            AuthorizationService authorizationService = allowInsecureConnections ? insecureAuthorizationService : defaultAuthorizationService;
-        } catch AuthorizationException e) {
-            finishWithTokenError(e);
-        }
+        AuthorizationService authorizationService = allowInsecureConnections ? insecureAuthorizationService : defaultAuthorizationService;
         if (clientSecret == null) {
             authorizationService.performTokenRequest(tokenRequest, tokenResponseCallback);
         } else {
