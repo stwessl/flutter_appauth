@@ -341,7 +341,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
                 .setAuthorizationCode(tokenRequestParameters.authorizationCode)
                 .setCodeVerifier(tokenRequestParameters.codeVerifier)
                 .setRedirectUri(Uri.parse(tokenRequestParameters.redirectUrl))
-                .setNonce('AsDesds');
+                .setNonce("AsDesds");
 
         if (tokenRequestParameters.grantType != null) {
             builder.setGrantType(tokenRequestParameters.grantType);
