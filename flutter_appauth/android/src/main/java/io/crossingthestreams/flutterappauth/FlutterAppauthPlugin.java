@@ -309,8 +309,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
                         serviceConfiguration,
                         clientId,
                         ResponseTypeValues.CODE,
-                        Uri.parse(redirectUrl))
-                    .setNonce("AsDesds");
+                        Uri.parse(redirectUrl)).setNonce(null);
         if (scopes != null && !scopes.isEmpty()) {
             authRequestBuilder.setScopes(scopes);
         }
@@ -342,7 +341,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
                 .setAuthorizationCode(tokenRequestParameters.authorizationCode)
                 .setCodeVerifier(tokenRequestParameters.codeVerifier)
                 .setRedirectUri(Uri.parse(tokenRequestParameters.redirectUrl))
-                .setNonce("AsDesds");
+                .setNonce(null);
 
         if (tokenRequestParameters.grantType != null) {
             builder.setGrantType(tokenRequestParameters.grantType);
@@ -428,7 +427,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
     }
 
     private void finishWithTokenError(AuthorizationException ex) {
-        finishWithError(TOKEN_ERROR_CODE, String.format(TOKEN_ERROR_MESSAGE_FORMAT, ex.error, ex.rootCause.getMessage()));
+        finishWithError(TOKEN_ERROR_CODE, String.format(TOKEN_ERROR_MESSAGE_FORMAT, ex.error, ex.getCause().getMessage()));
     }
 
 
