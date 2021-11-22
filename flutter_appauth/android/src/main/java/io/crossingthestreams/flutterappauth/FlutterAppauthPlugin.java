@@ -370,7 +370,11 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
         };
 
         TokenRequest tokenRequest = builder.build();
-        AuthorizationService authorizationService = allowInsecureConnections ? insecureAuthorizationService : defaultAuthorizationService;
+        try {
+            AuthorizationService authorizationService = allowInsecureConnections ? insecureAuthorizationService : defaultAuthorizationService;
+        } catch AuthorizationException e) {
+            finishWithTokenError(e);
+        }
         if (clientSecret == null) {
             authorizationService.performTokenRequest(tokenRequest, tokenResponseCallback);
         } else {
@@ -428,7 +432,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
     }
 
     private void finishWithTokenError(AuthorizationException ex) {
-        finishWithError(TOKEN_ERROR_CODE, String.format(TOKEN_ERROR_MESSAGE_FORMAT, ex.error, ex.errorDescription));
+        finishWithError(TOKEN_ERROR_CODE, String.format(TOKEN_ERROR_MESSAGE_FORMAT, ex.error, ex.rootCause.getMessage()));
     }
 
 
