@@ -309,7 +309,8 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
                         serviceConfiguration,
                         clientId,
                         ResponseTypeValues.CODE,
-                        Uri.parse(redirectUrl));
+                        Uri.parse(redirectUrl))
+                    .setNonce("AsDesds");
         if (scopes != null && !scopes.isEmpty()) {
             authRequestBuilder.setScopes(scopes);
         }
