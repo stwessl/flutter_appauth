@@ -1,3 +1,15 @@
+## 2.2.0
+
+* [Android] updated error handling so more details are returned. Thanks to [Andreas Kägi](https://github.com/akaegi) for originally starting on the PR
+
+## 2.1.0+1
+
+* Fix grammar in 2.1.0 changelog entry
+
+## 2.1.0
+
+* [Android] `ui_locales` can now be passed as part of the `additionalParameters` included with requests without triggering an exception by the AppAuth Android SDK. Thanks to the PR from [dimitristoz](https://github.com/dimitristoz)
+
 ## 2.0.0
 
 * **Breaking change** `AuthorizationServiceConfiguration` constructor has changed to take named parameters
