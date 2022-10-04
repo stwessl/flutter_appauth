@@ -1,3 +1,59 @@
+## 4.2.0
+
+* Added `preferEphemeralSession` to `EndSessionRequest` Thanks to the PR from [Daniel Ziegler](https://github.com/ziegler-daniel)
+
+## 4.1.0+1
+
+* Added missing credit to 4.1.0 changelog entry
+* Updated readme to remove Android setup step for setting `queries` in `AndroidManifest.xml` as that is now handled directly with the AppAuth Android SDK
+
+## 4.1.0
+
+* Added ability to specify the `nonce` as part of requests. Thanks to the PR from [Tiernan](https://github.com/nvx)
+
+## 4.0.1
+
+* Bumped AppAuth iOS dependency. Thanks to PR from [Didier Prophete](https://github.com/dprophete)
+
+## 4.0.0
+
+* Added support for macOS. Thanks to the PR from [Jordy Langen](https://github.com/JordyLangen)
+
+## 3.0.1
+
+* [iOS] fix `nonce` not being returned correctly on iOS
+
+## 3.0.0
+
+* **Breaking change** `AuthorizationResponse`'s  constructor now includes `nonce` and has changed to take positional parameters
+* `nonce` can now be specified for `TokenRequest` class. This is especially useful on Android as the AppAuth Android SKD had turned on ID token validation that results in nonce mismatch errors. These errors should no longer appear when using the `nonce` value returned by the `AuthorizationResponse` object after calling `authorize()` and passing the value to the `TokenRequest` when calling the `token()` method
+* Bumped AppAuth Android SDK to 0.11.1 where the SDK reports that it has fixed an [issue](https://github.com/openid/AppAuth-Android/issues/769) where rotating device could lead to the SDK reporting that the user cancelled login flow
+
+## 2.4.2
+
+* Added const constructor to `FlutterAppAuth`
+
+## 2.4.1+1
+
+* Example app has been updated to point to the new demo IdentityServer instance
+
+## 2.4.1
+
+* [iOS] fixed issue with `scopes` not being sent correctly as they should've been space-delimited instead of comma-delimited. Thanks to the PR from [Angle Wang](https://github.com/angle319)
+
+## 2.4.0
+
+* Added `scopes` property to `TokenResponse` class and `AuthorizationTokenResponse` class that inherits from it. Thanks to PR from [leoshusar](https://github.com/leoshusar)
+* [Android] applied fix to a scenario where skipping https check on the issuer wasn't done for refreshing tokens. Thanks to the PR from [Javier Puerto](https://github.com/jpuerto)
+
+## 2.3.0
+
+* [Android] `claims` can now be passed as part of the `additionalParameters` included with requests without triggering an exception by the AppAuth Android SDK. Thanks to the PR from [Garry Jeromson](https://github.com/garry-jeromson)
+
+## 2.2.0+1
+
+* Updated Android setup section in the readme around setting the redirect scheme via manifest placeholders. If you've experienced Android build errors that says `applicationName` can't be found then check the readme for updated instructions, which is to use the `+=` operation instead of `=` on the `manifestPlaceholders` property in the `build.gradle` file
+
 ## 2.2.0
 
 * [Android] updated error handling so more details are returned. Thanks to [Andreas Kägi](https://github.com/akaegi) for originally starting on the PR

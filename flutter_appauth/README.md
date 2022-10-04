@@ -17,7 +17,7 @@ A Flutter bridge for AppAuth (https://appauth.io) used authenticating and author
 
 ## Getting Started
 
-Please see the example that demonstrates how to sign into the IdentityServer4 demo site (https://demo.identityserver.io). It has also been tested with Azure B2C and Google Sign-in. It is suggested that developers check the documentation of the identity provider they are using to see what capabilities it supports e.g. how to logout, what values of the `prompt` parameter it supports etc. API docs can be found [here](https://pub.dartlang.org/documentation/flutter_appauth/latest/)
+Please see the example that demonstrates how to sign into the demo IdentityServer instance (https://demo.duendesoftware.com). It has also been tested with Azure B2C and Google Sign-in. It is suggested that developers check the documentation of the identity provider they are using to see what capabilities it supports e.g. how to logout, what values of the `prompt` parameter it supports etc. API docs can be found [here](https://pub.dartlang.org/documentation/flutter_appauth/latest/)
 
 
 The first step is to create an instance of the plugin
@@ -39,7 +39,7 @@ final AuthorizationTokenResponse result = await appAuth.authorizeAndExchangeCode
                   );
 ```
 
-Here the `<client_id>` and `<redirect_url>` should be replaced by the values registered with your identity provider. The `<discovery_url>` would be the URL for the discovery endpoint exposed by your provider that will return a document containing information about the OAuth 2.0 endpoints among other things. This URL is obtained by concatenating the issuer with the path `/.well-known/openid-configuration`. For example, the full URL for the IdentityServer4 demo site is `https://demo.identityserver.io/.well-known/openid-configuration`. As demonstrated in the above sample code, it's also possible specify the `scopes` being requested.
+Here the `<client_id>` and `<redirect_url>` should be replaced by the values registered with your identity provider. The `<discovery_url>` would be the URL for the discovery endpoint exposed by your provider that will return a document containing information about the OAuth 2.0 endpoints among other things. This URL is obtained by concatenating the issuer with the path `/.well-known/openid-configuration`. For example, the full URL for the IdentityServer instance is `https://demo.duendesoftware.com/.well-known/openid-configuration`. As demonstrated in the above sample code, it's also possible specify the `scopes` being requested.
 
 Rather than using the full discovery URL, the issuer could be used instead so that the process retrieving the discovery document is skipped
 
@@ -54,14 +54,14 @@ final AuthorizationTokenResponse result = await appAuth.authorizeAndExchangeCode
                   );
 ```
 
-In the event that discovery isn't supported or that you already know the endpoints for your server, they could be explicitly specified in the event that the dis
+In the event that discovery isn't supported or that you already know the endpoints for your server, they could be explicitly specified
 
 ```dart
 final AuthorizationTokenResponse result = await appAuth.authorizeAndExchangeCode(
                     AuthorizationTokenRequest(
                       '<client_id>',
                       '<redirect_url>',
-                      serviceConfiguration: AuthorizationServiceConfiguration(authorizationEndpoint: '<authorization_endpoint>',  tokenEndpooint: '<token_endpoint>', endSessionEndpoint: '<end_session_endpoint>'),
+                      serviceConfiguration: AuthorizationServiceConfiguration(authorizationEndpoint: '<authorization_endpoint>',  tokenEndpoint: '<token_endpoint>', endSessionEndpoint: '<end_session_endpoint>'),
                       scopes: [...]
                     ),
                   );
@@ -69,15 +69,18 @@ final AuthorizationTokenResponse result = await appAuth.authorizeAndExchangeCode
 
 Upon completing the request successfully, the method should return an object (the `result` variable in the above sample code is an instance of the `AuthorizationTokenResponse` class) that contain details that should be stored for future use e.g. access token, refresh token etc.
 
-If you would prefer to not have the automatic code exchange to happen then can call the `authorize` method instead of the `authorizeAndExchangeCode` method. This will return an instance of the `AuthorizationResponse` class that will contain the code verifier that AppAuth generated (as part of implementing PKCE) when issuing the authorization request, the authorization code and additional parameters should they exist. Both of the code verifier and authorization code would need to be stored so they can then be reused to exchange the code later on e.g.
+If you would prefer to not have the automatic code exchange to happen then can call the `authorize` method instead of the `authorizeAndExchangeCode` method. This will return an instance of the `AuthorizationResponse` class that will contain the nonce value and code verifier (note: code verifier is used as part of implement PKCE) that AppAuth generated when issuing the authorization request, the authorization code and additional parameters should they exist. The nonce, code verifier and authorization code would need to be stored so they can then be reused to exchange the code later on e.g.
 
 ```dart
 final TokenResponse result = await appAuth.token(TokenRequest('<client_id>', '<redirect_url>',
         authorizationCode: '<authorization_code>',
         discoveryUrl: '<discovery_url>',
         codeVerifier: '<code_verifier>',
+        nonce: 'nonce',
         scopes: ['openid','profile', 'email', 'offline_access', 'api']));
 ```
+
+Reusing the nonce and code verifier is particularly important as the AppAuth SDKs (especially on Android) may return an error (e.g. ID token validation error due to nonce mismatch) if this isn't done
 
 ### Refreshing tokens
 
@@ -103,6 +106,16 @@ await appAuth.endSession(EndSessionRequest(
 
 The above code passes an `AuthorizationServiceConfiguration` with all the endpoints defined but alternatives are to specify an `issuer` or `discoveryUrl` like you would with the other APIs in the plugin (e.g. `authorizeAndExchangeCode()`).
 
+### Ephemeral Sessions (iOS and macOS only)
+On iOS (versions 13 and above) and macOS you can use the option `preferEphemeralSession = true` to start an 
+[ephemeral browser session](https://developer.apple.com/documentation/foundation/urlsessionconfiguration/1410529-ephemeral)
+to sign in and sign out.
+
+With an ephemeral session there will be no warning like `"app_name" Wants to Use "domain_name" to Sign In` on iOS.
+
+The option `preferEphemeralSession = true` must only be used for the end session call if it is also used for the sign in call. 
+Otherwise, there will be still an active login session in the browser.
+
 ## Android setup
 
 Go to the `build.gradle` file for your Android app to specify the custom scheme so that there should be a section in it that look similar to the following but replace `<your_custom_scheme>` with the desired value
@@ -113,36 +126,24 @@ android {
     ...
     defaultConfig {
         ...
-        manifestPlaceholders = [
+        manifestPlaceholders += [
                 'appAuthRedirectScheme': '<your_custom_scheme>'
         ]
     }
 }
 ```
 
-Please ensure that value of `<your_custom_scheme>` is all in lowercase as there've been reports from the community who had issues with redirects if there were any capital letters.
+Please ensure that value of `<your_custom_scheme>` is all in lowercase as there've been reports from the community who had issues with redirects if there were any capital letters. You may also notice the `+=` operation is applied on `manifestPlaceholders` instead of `=`. This is intentional and required as newer versions of the Flutter SDK has made some changes underneath the hood to deal with multidex. Using `=` instead of `+=` can lead to errors like the following
 
-If your app is target API 30 or above (i.e. Android 11 or newer), make sure to add the following to your `AndroidManifest.xml` file a level underneath the `<manifest>` element
-
-
-```xml
-<queries>
-    <intent>
-        <action android:name="android.intent.action.VIEW" />
-        <category android:name="android.intent.category.BROWSABLE" />
-        <data android:scheme="https" />
-    </intent>
-    <intent>
-        <action android:name="android.intent.action.VIEW" />
-        <category android:name="android.intent.category.APP_BROWSER" />
-        <data android:scheme="https" />
-    </intent>
-</queries>
+```
+Attribute application@name at AndroidManifest.xml:5:9-42 requires a placeholder substitution but no value for <applicationName> is provided.
 ```
 
-## iOS setup
+If you see this error then update your `build.gradle` to use `+=` instead.
 
-Go to the `Info.plist` for your iOS app to specify the custom scheme so that there should be a section in it that look similar to the following but replace `<your_custom_scheme>` with the desired value
+## iOS/macOS setup
+
+Go to the `Info.plist` for your iOS/macOS app to specify the custom scheme so that there should be a section in it that look similar to the following but replace `<your_custom_scheme>` with the desired value
 
 
 ```xml

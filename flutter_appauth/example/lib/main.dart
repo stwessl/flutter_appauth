@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:http/http.dart' as http;
@@ -12,8 +14,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _isBusy = false;
-  final FlutterAppAuth _appAuth = FlutterAppAuth();
+  final FlutterAppAuth _appAuth = const FlutterAppAuth();
   String? _codeVerifier;
+  String? _nonce;
   String? _authorizationCode;
   String? _refreshToken;
   String? _accessToken;
@@ -31,13 +34,13 @@ class _MyAppState extends State<MyApp> {
       TextEditingController();
   String? _userInfo;
 
-  // For a list of client IDs, go to https://demo.identityserver.io
+  // For a list of client IDs, go to https://demo.duendesoftware.com
   final String _clientId = 'interactive.public';
-  final String _redirectUrl = 'io.identityserver.demo:/oauthredirect';
-  final String _issuer = 'https://demo.identityserver.io';
+  final String _redirectUrl = 'com.duendesoftware.demo:/oauthredirect';
+  final String _issuer = 'https://demo.duendesoftware.com';
   final String _discoveryUrl =
-      'https://demo.identityserver.io/.well-known/openid-configuration';
-  final String _postLogoutRedirectUrl = 'io.identityserver.demo:/';
+      'https://demo.duendesoftware.com/.well-known/openid-configuration';
+  final String _postLogoutRedirectUrl = 'com.duendesoftware.demo:/';
   final List<String> _scopes = <String>[
     'openid',
     'profile',
@@ -48,9 +51,9 @@ class _MyAppState extends State<MyApp> {
 
   final AuthorizationServiceConfiguration _serviceConfiguration =
       const AuthorizationServiceConfiguration(
-    authorizationEndpoint: 'https://demo.identityserver.io/connect/authorize',
-    tokenEndpoint: 'https://demo.identityserver.io/connect/token',
-    endSessionEndpoint: 'https://demo.identityserver.io/connect/endsession',
+    authorizationEndpoint: 'https://demo.duendesoftware.com/connect/authorize',
+    tokenEndpoint: 'https://demo.duendesoftware.com/connect/token',
+    endSessionEndpoint: 'https://demo.duendesoftware.com/connect/endsession',
   );
 
   @override
@@ -60,72 +63,84 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              Visibility(
-                visible: _isBusy,
-                child: const LinearProgressIndicator(),
-              ),
-              ElevatedButton(
-                child: const Text('Sign in with no code exchange'),
-                onPressed: _signInWithNoCodeExchange,
-              ),
-              ElevatedButton(
-                child: const Text('Exchange code'),
-                onPressed: _authorizationCode != null ? _exchangeCode : null,
-              ),
-              ElevatedButton(
-                child: const Text('Sign in with auto code exchange'),
-                onPressed: () => _signInWithAutoCodeExchange(),
-              ),
-              if (Platform.isIOS)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ElevatedButton(
-                    child: const Text(
-                      'Sign in with auto code exchange using ephemeral session (iOS only)',
-                      textAlign: TextAlign.center,
-                    ),
-                    onPressed: () => _signInWithAutoCodeExchange(
-                        preferEphemeralSession: true),
-                  ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                Visibility(
+                  visible: _isBusy,
+                  child: const LinearProgressIndicator(),
                 ),
-              ElevatedButton(
-                child: const Text('Refresh token'),
-                onPressed: _refreshToken != null ? _refresh : null,
-              ),
-              ElevatedButton(
-                child: const Text('End session'),
-                onPressed: _idToken != null
-                    ? () async {
-                        await _endSession();
-                      }
-                    : null,
-              ),
-              const Text('authorization code'),
-              TextField(
-                controller: _authorizationCodeTextController,
-              ),
-              const Text('access token'),
-              TextField(
-                controller: _accessTokenTextController,
-              ),
-              const Text('access token expiration'),
-              TextField(
-                controller: _accessTokenExpirationTextController,
-              ),
-              const Text('id token'),
-              TextField(
-                controller: _idTokenTextController,
-              ),
-              const Text('refresh token'),
-              TextField(
-                controller: _refreshTokenTextController,
-              ),
-              const Text('test api results'),
-              Text(_userInfo ?? ''),
-            ],
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  child: const Text('Sign in with no code exchange'),
+                  onPressed: () => _signInWithNoCodeExchange(),
+                ),
+                ElevatedButton(
+                  child: const Text(
+                      'Sign in with no code exchange and generated nonce'),
+                  onPressed: () => _signInWithNoCodeExchangeAndGeneratedNonce(),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  child: const Text('Exchange code'),
+                  onPressed: _authorizationCode != null ? _exchangeCode : null,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  child: const Text('Sign in with auto code exchange'),
+                  onPressed: () => _signInWithAutoCodeExchange(),
+                ),
+                if (Platform.isIOS || Platform.isMacOS)
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ElevatedButton(
+                      child: const Text(
+                        'Sign in with auto code exchange using ephemeral session',
+                        textAlign: TextAlign.center,
+                      ),
+                      onPressed: () => _signInWithAutoCodeExchange(
+                          preferEphemeralSession: true),
+                    ),
+                  ),
+                ElevatedButton(
+                  child: const Text('Refresh token'),
+                  onPressed: _refreshToken != null ? _refresh : null,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  child: const Text('End session'),
+                  onPressed: _idToken != null
+                      ? () async {
+                          await _endSession();
+                        }
+                      : null,
+                ),
+                const SizedBox(height: 8),
+                const Text('authorization code'),
+                TextField(
+                  controller: _authorizationCodeTextController,
+                ),
+                const Text('access token'),
+                TextField(
+                  controller: _accessTokenTextController,
+                ),
+                const Text('access token expiration'),
+                TextField(
+                  controller: _accessTokenExpirationTextController,
+                ),
+                const Text('id token'),
+                TextField(
+                  controller: _idTokenTextController,
+                ),
+                const Text('refresh token'),
+                TextField(
+                  controller: _refreshTokenTextController,
+                ),
+                const Text('test api results'),
+                Text(_userInfo ?? ''),
+              ],
+            ),
           ),
         ),
       ),
@@ -147,6 +162,7 @@ class _MyAppState extends State<MyApp> {
   void _clearSessionInfo() {
     setState(() {
       _codeVerifier = null;
+      _nonce = null;
       _authorizationCode = null;
       _authorizationCodeTextController.clear();
       _accessToken = null;
@@ -181,6 +197,7 @@ class _MyAppState extends State<MyApp> {
           authorizationCode: _authorizationCode,
           discoveryUrl: _discoveryUrl,
           codeVerifier: _codeVerifier,
+          nonce: _nonce,
           scopes: _scopes));
       _processTokenResponse(result);
       await _testApi(result);
@@ -207,6 +224,29 @@ class _MyAppState extends State<MyApp> {
       //     scopes: _scopes,
       //   ),
       // );
+      if (result != null) {
+        _processAuthResponse(result);
+      }
+    } catch (_) {
+      _clearBusyState();
+    }
+  }
+
+  Future<void> _signInWithNoCodeExchangeAndGeneratedNonce() async {
+    try {
+      _setBusyState();
+      final Random random = Random.secure();
+      final String nonce =
+          base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
+      // use the discovery endpoint to find the configuration
+      final AuthorizationResponse? result = await _appAuth.authorize(
+        AuthorizationRequest(_clientId, _redirectUrl,
+            discoveryUrl: _discoveryUrl,
+            scopes: _scopes,
+            loginHint: 'bob',
+            nonce: nonce),
+      );
+
       if (result != null) {
         _processAuthResponse(result);
       }
@@ -273,8 +313,9 @@ class _MyAppState extends State<MyApp> {
 
   void _processAuthResponse(AuthorizationResponse response) {
     setState(() {
-      // save the code verifier as it must be used when exchanging the token
+      // save the code verifier and nonce as it must be used when exchanging the token
       _codeVerifier = response.codeVerifier;
+      _nonce = response.nonce;
       _authorizationCode =
           _authorizationCodeTextController.text = response.authorizationCode!;
       _isBusy = false;
@@ -293,7 +334,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _testApi(TokenResponse? response) async {
     final http.Response httpResponse = await http.get(
-        Uri.parse('https://demo.identityserver.io/api/test'),
+        Uri.parse('https://demo.duendesoftware.com/api/test'),
         headers: <String, String>{'Authorization': 'Bearer $_accessToken'});
     setState(() {
       _userInfo = httpResponse.statusCode == 200 ? httpResponse.body : '';

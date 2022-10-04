@@ -23,9 +23,12 @@ class MethodChannelFlutterAppAuth extends FlutterAppAuthPlatform {
       return null;
     }
     return AuthorizationResponse(
-        result['authorizationCode'],
-        result['codeVerifier'],
-        result['authorizationAdditionalParameters']?.cast<String, dynamic>());
+      authorizationCode: result['authorizationCode'],
+      codeVerifier: result['codeVerifier'],
+      nonce: result['nonce'],
+      authorizationAdditionalParameters:
+          result['authorizationAdditionalParameters']?.cast<String, dynamic>(),
+    );
   }
 
   @override
@@ -45,6 +48,7 @@ class MethodChannelFlutterAppAuth extends FlutterAppAuthPlatform {
                 result['accessTokenExpirationTime'].toInt()),
         result['idToken'],
         result['tokenType'],
+        result['scopes']?.cast<String>(),
         result['authorizationAdditionalParameters']?.cast<String, dynamic>(),
         result['tokenAdditionalParameters']?.cast<String, dynamic>());
   }
@@ -65,6 +69,7 @@ class MethodChannelFlutterAppAuth extends FlutterAppAuthPlatform {
                 result['accessTokenExpirationTime'].toInt()),
         result['idToken'],
         result['tokenType'],
+        result['scopes']?.cast<String>(),
         result['tokenAdditionalParameters']?.cast<String, dynamic>());
   }
 
