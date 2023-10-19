@@ -11,6 +11,7 @@ A Flutter bridge for AppAuth (https://appauth.io) used authenticating and author
 
 ## Tutorials from identity providers
 
+* [Asgardeo](https://wso2.com/asgardeo/docs/tutorials/auth-users-into-flutter-apps/)
 * [Auth0](https://auth0.com/blog/get-started-with-flutter-authentication/)
 * [FusionAuth](https://fusionauth.io/blog/2020/11/23/securing-flutter-oauth/)
 
@@ -121,7 +122,7 @@ Otherwise, there will be still an active login session in the browser.
 Go to the `build.gradle` file for your Android app to specify the custom scheme so that there should be a section in it that look similar to the following but replace `<your_custom_scheme>` with the desired value
 
 ```
-...
+...groovy
 android {
     ...
     defaultConfig {
@@ -131,6 +132,30 @@ android {
         ]
     }
 }
+```
+
+Alternatively, the redirect URI can be directly configured by adding an
+intent-filter for AppAuth's RedirectUriReceiverActivity to your
+AndroidManifest.xml:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.my_app">
+...
+<activity
+        android:name="net.openid.appauth.RedirectUriReceiverActivity"
+        android:exported="true"
+        tools:node="replace">
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="<your_custom_scheme>"
+              android:host="<your_custom_host>"/>
+    </intent-filter>
+</activity>
+...
 ```
 
 Please ensure that value of `<your_custom_scheme>` is all in lowercase as there've been reports from the community who had issues with redirects if there were any capital letters. You may also notice the `+=` operation is applied on `manifestPlaceholders` instead of `=`. This is intentional and required as newer versions of the Flutter SDK has made some changes underneath the hood to deal with multidex. Using `=` instead of `+=` can lead to errors like the following
